@@ -44,7 +44,8 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help)
-            head -n 20 "$0" | grep "^#" | sed 's/^# \?//'
+            # Extract header comments (lines starting with # until first non-comment)
+            sed -n '2,/^[^#]/p' "$0" | grep "^#" | sed 's/^# \?//' | head -n -1
             exit 0
             ;;
         *)
@@ -170,6 +171,16 @@ elif [ "$METHOD" = "advanced" ]; then
         exit 1
     fi
     
+    # Verify icon file exists
+    ICON_FILE="${APP_PATH}/Contents/Resources/icon.icns"
+    if [ ! -f "$ICON_FILE" ]; then
+        echo "Warning: Icon file not found at $ICON_FILE"
+        echo "DMG will be created without custom icon"
+        ICON_OPTION=""
+    else
+        ICON_OPTION="--volicon \"$ICON_FILE\""
+    fi
+    
     DMG_FILE="${DMG_NAME}.dmg"
     
     # Remove existing DMG if present
@@ -180,18 +191,22 @@ elif [ "$METHOD" = "advanced" ]; then
     
     # Create DMG with custom appearance
     echo "Creating styled DMG image..."
-    create-dmg \
-        --volname "GitHub Overlay" \
-        --volicon "${APP_PATH}/Contents/Resources/icon.icns" \
+    
+    # Build create-dmg command with conditional icon
+    CMD="create-dmg \
+        --volname \"GitHub Overlay\" \
+        $ICON_OPTION \
         --window-pos 200 120 \
         --window-size 600 400 \
         --icon-size 100 \
-        --icon "${APP_NAME}.app" 175 190 \
-        --hide-extension "${APP_NAME}.app" \
+        --icon \"${APP_NAME}.app\" 175 190 \
+        --hide-extension \"${APP_NAME}.app\" \
         --app-drop-link 425 185 \
         --no-internet-enable \
-        "$DMG_FILE" \
-        "$DIST_DIR/"
+        \"$DMG_FILE\" \
+        \"$DIST_DIR/\""
+    
+    eval $CMD
     
     echo "✓ DMG created: $DMG_FILE"
 fi

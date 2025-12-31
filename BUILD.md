@@ -271,7 +271,7 @@ When you push a version tag, the DMG is automatically built and attached to the 
 ```bash
 # Update version in macos_github_overlay/about/version.txt
 git add macos_github_overlay/about/version.txt
-git commit -m "Release v1.0.0"
+git commit -m "Bump version to 1.0.0"
 git push
 
 # Create and push tag

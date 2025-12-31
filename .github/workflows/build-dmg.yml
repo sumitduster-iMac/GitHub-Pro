@@ -55,7 +55,15 @@ jobs:
       - name: Get version
         id: version
         run: |
+          if [ ! -f "macos_github_overlay/about/version.txt" ]; then
+            echo "Error: version.txt not found"
+            exit 1
+          fi
           VERSION=$(cat macos_github_overlay/about/version.txt)
+          if [ -z "$VERSION" ]; then
+            echo "Error: version.txt is empty"
+            exit 1
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
       
