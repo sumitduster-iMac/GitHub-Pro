@@ -1,0 +1,1 @@
+A simple macOS overlay application for pinning GitHub to a dedicated window.

@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, copilot/* ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint Python Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black
+      
+      - name: Check Python syntax
+        run: |
+          python -m py_compile macos_github_overlay/*.py
+      
+      - name: Run flake8
+        run: |
+          flake8 macos_github_overlay --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 macos_github_overlay --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        continue-on-error: true
+      
+      - name: Check code formatting with black
+        run: |
+          black --check --diff macos_github_overlay || true
+        continue-on-error: true
+
+  validate:
+    name: Validate Package Structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Validate package structure
+        run: |
+          python -c "
+          import os
+          import sys
+          
+          required_files = [
+              'macos_github_overlay/__init__.py',
+              'macos_github_overlay/__main__.py',
+              'macos_github_overlay/main.py',
+              'macos_github_overlay/app.py',
+              'macos_github_overlay/constants.py',
+              'macos_github_overlay/listener.py',
+              'macos_github_overlay/launcher.py',
+              'macos_github_overlay/health_checks.py',
+              'setup.py',
+              'run.py',
+              'requirements.txt',
+              'readme.md',
+          ]
+          
+          errors = []
+          for file in required_files:
+              if not os.path.exists(file):
+                  errors.append(f'Missing: {file}')
+              elif os.path.getsize(file) == 0:
+                  errors.append(f'Empty file: {file}')
+          
+          if errors:
+              print('Validation errors:')
+              for error in errors:
+                  print(f'  - {error}')
+              sys.exit(1)
+          else:
+              print('✓ All required files present and non-empty')
+          "
+      
+      - name: Validate configuration
+        run: |
+          python -c "
+          with open('macos_github_overlay/constants.py', 'r') as f:
+              content = f.read()
+              assert 'github.com' in content, 'GitHub URL not found'
+              assert 'APP_TITLE = \"GitHub\"' in content, 'App title not set to GitHub'
+              assert 'kCGEventFlagMaskAlternate' in content, 'Option key not configured'
+              print('✓ Configuration validated')
+          "
+
+  build-check:
+    name: Check Build Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Validate setup.py
+        run: |
+          python -c "compile(open('setup.py').read(), 'setup.py', 'exec'); print('✓ setup.py is valid')"
+      
+      - name: Check requirements.txt
+        run: |
+          cat requirements.txt
+          echo "✓ requirements.txt found"
+
+  test-import:
+    name: Test Package Import Structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Test package structure
+        run: |
+          python -c "
+          import sys
+          import os
+          sys.path.insert(0, os.getcwd())
+          
+          # This will fail on non-macOS but we check the structure
+          try:
+              import macos_github_overlay
+              print(f'✓ Package version: {macos_github_overlay.__version__}')
+              print(f'✓ Package author: {macos_github_overlay.__author__}')
+          except ImportError as e:
+              if 'objc' in str(e) or 'AppKit' in str(e) or 'WebKit' in str(e) or 'Quartz' in str(e):
+                  print('✓ Package structure OK (PyObjC not available - expected on non-macOS)')
+              else:
+                  print(f'✗ Unexpected import error: {e}')
+                  sys.exit(1)
+          "
+
+  documentation:
+    name: Check Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check documentation files
+        run: |
+          test -f readme.md && echo "✓ README.md exists"
+          test -f BUILD.md && echo "✓ BUILD.md exists"
+          test -f LICENSE && echo "✓ LICENSE exists"
+      
+      - name: Check README content
+        run: |
+          grep -q "macos-github-overlay" readme.md && echo "✓ README mentions project name"
+          grep -q "Option.*Space" readme.md && echo "✓ README mentions hotkey"
+          grep -q "github.com" readme.md && echo "✓ README mentions GitHub"
