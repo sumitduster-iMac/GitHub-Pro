@@ -171,16 +171,6 @@ elif [ "$METHOD" = "advanced" ]; then
         exit 1
     fi
     
-    # Verify icon file exists
-    ICON_FILE="${APP_PATH}/Contents/Resources/icon.icns"
-    if [ ! -f "$ICON_FILE" ]; then
-        echo "Warning: Icon file not found at $ICON_FILE"
-        echo "DMG will be created without custom icon"
-        ICON_OPTION=""
-    else
-        ICON_OPTION="--volicon \"$ICON_FILE\""
-    fi
-    
     DMG_FILE="${DMG_NAME}.dmg"
     
     # Remove existing DMG if present
@@ -192,21 +182,38 @@ elif [ "$METHOD" = "advanced" ]; then
     # Create DMG with custom appearance
     echo "Creating styled DMG image..."
     
-    # Build create-dmg command with conditional icon
-    CMD="create-dmg \
-        --volname \"GitHub Overlay\" \
-        $ICON_OPTION \
-        --window-pos 200 120 \
-        --window-size 600 400 \
-        --icon-size 100 \
-        --icon \"${APP_NAME}.app\" 175 190 \
-        --hide-extension \"${APP_NAME}.app\" \
-        --app-drop-link 425 185 \
-        --no-internet-enable \
-        \"$DMG_FILE\" \
-        \"$DIST_DIR/\""
+    # Verify icon file exists
+    ICON_FILE="${APP_PATH}/Contents/Resources/icon.icns"
     
-    eval $CMD
+    # Build create-dmg command with conditional icon option
+    if [ -f "$ICON_FILE" ]; then
+        create-dmg \
+            --volname "GitHub Overlay" \
+            --volicon "$ICON_FILE" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "${APP_NAME}.app" 175 190 \
+            --hide-extension "${APP_NAME}.app" \
+            --app-drop-link 425 185 \
+            --no-internet-enable \
+            "$DMG_FILE" \
+            "$DIST_DIR/"
+    else
+        echo "Warning: Icon file not found at $ICON_FILE"
+        echo "DMG will be created without custom icon"
+        create-dmg \
+            --volname "GitHub Overlay" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "${APP_NAME}.app" 175 190 \
+            --hide-extension "${APP_NAME}.app" \
+            --app-drop-link 425 185 \
+            --no-internet-enable \
+            "$DMG_FILE" \
+            "$DIST_DIR/"
+    fi
     
     echo "✓ DMG created: $DMG_FILE"
 fi
