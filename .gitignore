@@ -85,3 +85,7 @@ Temporary Items
 build/
 dist/
 *.app
+
+# DMG creation
+*.dmg
+dmg_temp/
