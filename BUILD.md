@@ -255,6 +255,34 @@ create-dmg \
   "dist/"
 ```
 
+### Automated DMG Builds (GitHub Actions)
+
+This repository includes a GitHub Actions workflow for automated DMG creation.
+
+**Manual Trigger:**
+1. Go to the Actions tab on GitHub
+2. Select "Build DMG" workflow
+3. Click "Run workflow"
+4. Choose architecture (universal, x86_64, or arm64)
+5. Download the DMG from artifacts after build completes
+
+**Automatic Release:**
+When you push a version tag, the DMG is automatically built and attached to the release:
+```bash
+# Update version in macos_github_overlay/about/version.txt
+git add macos_github_overlay/about/version.txt
+git commit -m "Release v1.0.0"
+git push
+
+# Create and push tag
+git tag v1.0.0
+git push origin v1.0.0
+
+# Create release on GitHub - DMG will be automatically attached
+```
+
+See `.github/workflows/README.md` for more details on automated builds.
+
 ## Uninstallation
 
 1. Remove from login items:

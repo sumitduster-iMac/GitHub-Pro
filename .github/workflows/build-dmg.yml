@@ -1,0 +1,84 @@
+name: Build DMG
+
+on:
+  workflow_dispatch:
+    inputs:
+      architecture:
+        description: 'Architecture to build'
+        required: true
+        default: 'universal'
+        type: choice
+        options:
+          - universal
+          - x86_64
+          - arm64
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0
+  release:
+    types: [created]
+
+jobs:
+  build-dmg:
+    name: Build macOS DMG
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install py2app
+      
+      - name: Determine architecture
+        id: arch
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "arch=${{ inputs.architecture }}" >> $GITHUB_OUTPUT
+          else
+            echo "arch=universal" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Build DMG
+        run: |
+          chmod +x create_dmg.sh
+          ./create_dmg.sh --arch ${{ steps.arch.outputs.arch }}
+      
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(cat macos_github_overlay/about/version.txt)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Rename DMG with version and architecture
+        run: |
+          ARCH="${{ steps.arch.outputs.arch }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          if [ -f "macos-github-overlay.dmg" ]; then
+            mv macos-github-overlay.dmg "macos-github-overlay-${VERSION}-${ARCH}.dmg"
+            echo "Created: macos-github-overlay-${VERSION}-${ARCH}.dmg"
+          fi
+      
+      - name: Upload DMG as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-github-overlay-${{ steps.arch.outputs.arch }}-dmg
+          path: macos-github-overlay-*.dmg
+          retention-days: 30
+      
+      - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: macos-github-overlay-*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
