@@ -189,9 +189,17 @@ The application is **production-ready** and can be:
 3. Built as standalone .app
 4. Distributed via DMG installer
 
-### Optional Enhancements
+### Recent Enhancements (2025-12-31)
+✅ **DMG Creation Added:**
+- Automated `create_dmg.sh` script for building DMG installers
+- Support for universal binary and specific architectures
+- GitHub Actions workflow for automated DMG builds
+- DMG automatically attached to releases on version tags
+- Comprehensive documentation and quick reference guide
+
+### Optional Future Enhancements
 - Replace placeholder icons with proper GitHub-styled icons
-- Create professional DMG installer (with background image)
+- Add custom DMG background image
 - Add automated tests (requires macOS test environment)
 - Publish to PyPI (if desired)
 - Add more GitHub-specific features (notifications, etc.)
