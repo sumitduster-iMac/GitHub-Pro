@@ -15,8 +15,6 @@ on:
   push:
     tags:
       - 'v*'  # Trigger on version tags like v1.0.0
-  release:
-    types: [created]
 
 jobs:
   build-dmg:
@@ -62,10 +60,31 @@ jobs:
             echo "Error: version.txt not found"
             exit 1
           fi
-          VERSION=$(cat macos_github_overlay/about/version.txt)
+          VERSION_RAW=$(cat macos_github_overlay/about/version.txt)
+          VERSION=$(printf "%s" "$VERSION_RAW" | tr -d ' \t\r\n')
           if [ -z "$VERSION" ]; then
-            echo "Error: version.txt is empty"
+            echo "Error: version.txt is empty or invalid."
+            echo "  Raw content: '$VERSION_RAW'"
+            echo "  Trimmed value: '$VERSION'"
+            echo "  Expected format: X.Y.Z (e.g., 1.2.3)"
             exit 1
+          fi
+          # Validate version format (X.Y.Z)
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Error: version '$VERSION' from version.txt is not in the expected format X.Y.Z"
+            exit 1
+          fi
+          # If this workflow was triggered by a tag (e.g., refs/tags/v1.2.3),
+          # ensure the tag version (without leading 'v') matches VERSION.
+          if [ -n "${GITHUB_REF:-}" ] && echo "$GITHUB_REF" | grep -qE '^refs/tags/'; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            TAG_VERSION="${TAG#v}"
+            if [ "$TAG_VERSION" != "$VERSION" ]; then
+              echo "Error: version mismatch between tag and version.txt"
+              echo "  Tag version (after stripping 'v'): $TAG_VERSION"
+              echo "  version.txt: $VERSION"
+              exit 1
+            fi
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
@@ -75,8 +94,12 @@ jobs:
           ARCH="${{ steps.arch.outputs.arch }}"
           VERSION="${{ steps.version.outputs.version }}"
           if [ -f "macos-github-overlay.dmg" ]; then
-            mv macos-github-overlay.dmg "macos-github-overlay-${VERSION}-${ARCH}.dmg"
+            mv "macos-github-overlay.dmg" "macos-github-overlay-${VERSION}-${ARCH}.dmg"
             echo "Created: macos-github-overlay-${VERSION}-${ARCH}.dmg"
+          else
+            echo "Error: macos-github-overlay.dmg not found"
+            ls -la *.dmg || echo "No DMG files found"
+            exit 1
           fi
       
       - name: Upload DMG as artifact

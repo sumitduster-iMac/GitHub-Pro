@@ -76,12 +76,15 @@ To create a new release with DMG:
    git push origin v1.0.0
    ```
 
-4. **Create release on GitHub:**
-   - Go to Releases
-   - Click "Create a new release"
-   - Select the tag you created
-   - Fill in release notes
-   - The DMG will be automatically attached by the workflow
+4. **(Optional) Create or edit release on GitHub:**
+   - After you push the tag, the `build-dmg.yml` workflow will run automatically
+   - If a release for that tag does **not** exist, the workflow will create it automatically
+   - If you prefer to add or edit release notes manually:
+     - Go to Releases
+     - Click "Create a new release" (or edit the existing one)
+     - Select the tag you created
+     - Fill in or update release notes
+   - The DMG will be automatically built and attached to the release by the workflow
 
 ## Build Artifacts
 

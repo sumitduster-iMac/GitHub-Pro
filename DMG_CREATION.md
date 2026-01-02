@@ -108,8 +108,9 @@ git push origin v1.0.0
 
 After running the script:
 
-- **Local build:** `macos-github-overlay.dmg` in the current directory
-- **GitHub Actions:** `macos-github-overlay-{version}-{arch}.dmg` as artifact/release asset
+- **Local build:** `macos-github-overlay.dmg` in the current directory (single, generic name, regardless of version/architecture)
+- **GitHub Actions:** `macos-github-overlay-{version}-{arch}.dmg` as artifact/release asset (for example, `macos-github-overlay-1.0.0-arm64.dmg`)
+  - This difference is intentional: local builds use a fixed filename for convenience, while CI builds include version and architecture to make releases easier to identify.
 
 ## Troubleshooting
 

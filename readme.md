@@ -38,7 +38,7 @@ Download the latest DMG from the [Releases](https://github.com/sumitduster-iMac/
 2. Drag `macos-github-overlay.app` to the Applications folder
 3. Eject the DMG
 4. Launch from Applications or Spotlight
-5. Grant Accessibility permissions when prompted
+5. Grant Accessibility permissions when prompted (used only to detect the `Option+Space` global hotkey system-wide)
 
 ### From Source
 

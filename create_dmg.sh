@@ -45,7 +45,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --help)
             # Extract header comments (lines starting with # until first non-comment)
-            sed -n '2,/^[^#]/p' "$0" | grep "^#" | sed 's/^# \?//' | head -n -1
+            sed -n '2,/^[^#]/p' "$0" | grep "^#" | sed 's/^# \?//' | sed '$d'
             exit 0
             ;;
         *)
@@ -90,12 +90,12 @@ if [ "$SKIP_BUILD" = false ]; then
         exit 1
     fi
     
-    # Clean previous build
-    if [ -d "build" ]; then
+    # Clean previous build with safeguards
+    if [ -d "build" ] && [ -n "build" ] && [ "build" != "/" ]; then
         echo "Cleaning previous build..."
         rm -rf build
     fi
-    if [ -d "$DIST_DIR" ]; then
+    if [ -d "$DIST_DIR" ] && [ -n "$DIST_DIR" ] && [ "$DIST_DIR" != "/" ]; then
         echo "Cleaning previous dist..."
         rm -rf "$DIST_DIR"
     fi
@@ -124,20 +124,22 @@ fi
 echo ""
 
 # Step 2: Create the DMG
+DMG_FILE="${DMG_NAME}.dmg"
+
+# Remove existing DMG if present
+if [ -f "$DMG_FILE" ]; then
+    echo "Removing existing DMG..."
+    rm -f "$DMG_FILE"
+fi
+
 if [ "$METHOD" = "simple" ]; then
     echo "Step 2: Creating DMG with hdiutil (simple method)..."
     
-    DMG_FILE="${DMG_NAME}.dmg"
-    
-    # Remove existing DMG if present
-    if [ -f "$DMG_FILE" ]; then
-        echo "Removing existing DMG..."
-        rm -f "$DMG_FILE"
-    fi
-    
     # Create a temporary directory for DMG contents
     DMG_TEMP="dmg_temp"
-    rm -rf "$DMG_TEMP"
+    if [ -d "$DMG_TEMP" ] && [ -n "$DMG_TEMP" ] && [ "$DMG_TEMP" != "/" ]; then
+        rm -rf "$DMG_TEMP"
+    fi
     mkdir -p "$DMG_TEMP"
     
     # Copy the app to the temp directory
@@ -157,7 +159,9 @@ if [ "$METHOD" = "simple" ]; then
         "$DMG_FILE"
     
     # Clean up temp directory
-    rm -rf "$DMG_TEMP"
+    if [ -d "$DMG_TEMP" ] && [ -n "$DMG_TEMP" ] && [ "$DMG_TEMP" != "/" ]; then
+        rm -rf "$DMG_TEMP"
+    fi
     
     echo "✓ DMG created: $DMG_FILE"
     
@@ -171,49 +175,35 @@ elif [ "$METHOD" = "advanced" ]; then
         exit 1
     fi
     
-    DMG_FILE="${DMG_NAME}.dmg"
-    
-    # Remove existing DMG if present
-    if [ -f "$DMG_FILE" ]; then
-        echo "Removing existing DMG..."
-        rm -f "$DMG_FILE"
-    fi
-    
     # Create DMG with custom appearance
     echo "Creating styled DMG image..."
     
     # Verify icon file exists
     ICON_FILE="${APP_PATH}/Contents/Resources/icon.icns"
     
-    # Build create-dmg command with conditional icon option
+    # Build create-dmg command arguments with optional icon
+    CREATE_DMG_ARGS=(
+        --volname "macos-github-overlay"
+        --window-pos 200 120
+        --window-size 600 400
+        --icon-size 100
+        --icon "${APP_NAME}.app" 175 190
+        --hide-extension "${APP_NAME}.app"
+        --app-drop-link 425 185
+        --no-internet-enable
+    )
+    
     if [ -f "$ICON_FILE" ]; then
-        create-dmg \
-            --volname "GitHub Overlay" \
-            --volicon "$ICON_FILE" \
-            --window-pos 200 120 \
-            --window-size 600 400 \
-            --icon-size 100 \
-            --icon "${APP_NAME}.app" 175 190 \
-            --hide-extension "${APP_NAME}.app" \
-            --app-drop-link 425 185 \
-            --no-internet-enable \
-            "$DMG_FILE" \
-            "$DIST_DIR/"
+        CREATE_DMG_ARGS=(
+            --volicon "$ICON_FILE"
+            "${CREATE_DMG_ARGS[@]}"
+        )
     else
         echo "Warning: Icon file not found at $ICON_FILE"
         echo "DMG will be created without custom icon"
-        create-dmg \
-            --volname "GitHub Overlay" \
-            --window-pos 200 120 \
-            --window-size 600 400 \
-            --icon-size 100 \
-            --icon "${APP_NAME}.app" 175 190 \
-            --hide-extension "${APP_NAME}.app" \
-            --app-drop-link 425 185 \
-            --no-internet-enable \
-            "$DMG_FILE" \
-            "$DIST_DIR/"
     fi
+    
+    create-dmg "${CREATE_DMG_ARGS[@]}" "$DMG_FILE" "$DIST_DIR/"
     
     echo "✓ DMG created: $DMG_FILE"
 fi
