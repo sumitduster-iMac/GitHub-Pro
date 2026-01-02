@@ -196,28 +196,92 @@ PY2APP_ARCH=arm64 python3 setup.py py2app
 
 ### Creating a DMG Installer
 
-While this repository doesn't include a DMG builder, you can create one manually:
+This repository includes an automated script to build DMG installers:
 
-1. Build the .app bundle
-2. Create a new DMG:
+**Quick Start:**
+```bash
+./create_dmg.sh
+```
+
+This will:
+1. Build the .app bundle using py2app
+2. Create a DMG with the app and Applications symlink
+3. Configure proper DMG appearance
+
+**Advanced Options:**
+
+```bash
+# Build for specific architecture
+./create_dmg.sh --arch x86_64    # Intel only
+./create_dmg.sh --arch arm64     # Apple Silicon only
+./create_dmg.sh --arch universal # Both (default)
+
+# Use advanced DMG styling (requires: brew install create-dmg)
+./create_dmg.sh --method advanced
+
+# Skip rebuild if .app already exists
+./create_dmg.sh --skip-build
+
+# View all options
+./create_dmg.sh --help
+```
+
+**Manual DMG Creation:**
+
+If you prefer to create a DMG manually:
+
+1. Build the .app bundle:
+```bash
+python3 setup.py py2app
+```
+
+2. Create a DMG with hdiutil (simple):
 ```bash
 hdiutil create -volname "macos-github-overlay" -srcfolder dist -ov -format UDZO macos-github-overlay.dmg
 ```
 
-3. Or use create-dmg (install via Homebrew):
+3. Or use create-dmg (styled):
 ```bash
 brew install create-dmg
 create-dmg \
   --volname "GitHub Overlay" \
   --window-pos 200 120 \
-  --window-size 800 400 \
+  --window-size 600 400 \
   --icon-size 100 \
-  --icon "macos-github-overlay.app" 200 190 \
+  --icon "macos-github-overlay.app" 175 190 \
   --hide-extension "macos-github-overlay.app" \
-  --app-drop-link 600 185 \
+  --app-drop-link 425 185 \
   "macos-github-overlay.dmg" \
   "dist/"
 ```
+
+### Automated DMG Builds (GitHub Actions)
+
+This repository includes a GitHub Actions workflow for automated DMG creation.
+
+**Manual Trigger:**
+1. Go to the Actions tab on GitHub
+2. Select "Build DMG" workflow
+3. Click "Run workflow"
+4. Choose architecture (universal, x86_64, or arm64)
+5. Download the DMG from artifacts after build completes
+
+**Automatic Release:**
+When you push a version tag, the DMG is automatically built and attached to the release:
+```bash
+# Update version in macos_github_overlay/about/version.txt
+git add macos_github_overlay/about/version.txt
+git commit -m "Bump version to 1.0.0"
+git push
+
+# Create and push tag
+git tag v1.0.0
+git push origin v1.0.0
+
+# Create release on GitHub - DMG will be automatically attached
+```
+
+See `.github/workflows/README.md` for more details on automated builds.
 
 ## Uninstallation
 

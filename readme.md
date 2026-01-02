@@ -30,6 +30,16 @@ This application provides a dedicated, always-accessible overlay window for GitH
 
 ## Installation
 
+### From DMG (Recommended)
+
+Download the latest DMG from the [Releases](https://github.com/sumitduster-iMac/GitHub-Pro/releases) page:
+
+1. Open the downloaded DMG file
+2. Drag `macos-github-overlay.app` to the Applications folder
+3. Eject the DMG
+4. Launch from Applications or Spotlight
+5. Grant Accessibility permissions when prompted (used only to detect the `Option+Space` global hotkey system-wide)
+
 ### From Source
 
 1. Clone the repository:
@@ -64,6 +74,15 @@ Then run:
 ```bash
 macos-github-overlay
 ```
+
+### Build Your Own DMG
+
+To create a DMG installer from source:
+```bash
+./create_dmg.sh
+```
+
+See [BUILD.md](BUILD.md) for more build options.
 
 ### Enable Auto-launch at Login
 
@@ -139,6 +158,30 @@ python3 setup.py py2app
 PY2APP_ARCH=x86_64 python3 setup.py py2app  # Intel only
 PY2APP_ARCH=arm64 python3 setup.py py2app   # Apple Silicon only
 ```
+
+### Creating a DMG Installer
+
+To package the application as a DMG for easy distribution:
+
+```bash
+# Build and create DMG in one command
+./create_dmg.sh
+
+# Or with specific options
+./create_dmg.sh --arch universal --method simple
+```
+
+The script will:
+1. Build the .app bundle (if not already built)
+2. Create a DMG with the app and Applications symlink
+3. Configure DMG appearance
+
+Options:
+- `--arch`: Choose `universal` (default), `x86_64`, or `arm64`
+- `--method`: Choose `simple` (hdiutil) or `advanced` (styled, requires create-dmg)
+- `--skip-build`: Use existing .app without rebuilding
+
+For more details, see [BUILD.md](BUILD.md).
 
 ## Architecture
 
